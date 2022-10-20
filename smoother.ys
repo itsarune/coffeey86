@@ -66,13 +66,12 @@ test:
 	#----A------
 	# stall
 	# compute %rbx + 2 * %rcx + %rdx in %rax # C
-	rrmovq  %rcx, %rdx
-	mulq	%r9, %rdx
+	mulq	%r9, %rcx
 	
-	addq    %rbx, %rdx
-	addq    %r8, %rdx
+	addq    %rbx, %rcx
+	addq    %r8, %rcx
 	
-	divq	%r10, %rdx      # C
+	divq	%r10, %rcx      # C
 	
 	rrmovq	%rax, %r9       # array[i] = avg(...)
 	
@@ -82,14 +81,14 @@ test:
 	
 	
 	#------
-    rmmovq  %rdx, 0(%r9)
+    rmmovq  %rcx, 0(%r9)
 
     addq    %r11, %rax      # increment i
     
     subq	%r11, %rsi      # B 
     
     #AVG setup for next tick
-    rrmovq %rdx, %rbx
+    rrmovq %rcx, %rbx
     rrmovq %r8, %rcx
     
     
