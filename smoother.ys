@@ -3,16 +3,20 @@
 
 # change log
 # 1: moved constants to its own registers instead of re-initing r11 all the time
-
 main:
+	irmovq	$size, %rsi
 	irmovq	$stack, %rsp
 	irmovq	$data, %rdi
-	irmovq	$size, %rsi
 	mrmovq	0(%rsi), %rsi
 	call	smooth
 	halt
 
 smooth:
+        pushq %rbx
+        pushq %rbp
+        pushq %r12
+        pushq %r13
+        pushq %r14
         irmovq  $1, %rax        # rax holds i
 	    irmovq	$1, %r11
         irmovq  $8, %rbp
@@ -23,15 +27,58 @@ test:
 	subq	%rax, %rdx
 	jle	done
 
-        pushq   %rax            # save caller-save regs we are using
-	pushq	%rdi
-	pushq	%rsi
-	rrmovq	%rax, %rsi      # array in %rdi, i in %rsi
-        call    avg
-        rrmovq  %rax, %r8       # save result of avg
-        popq    %rsi            # restore caller-save regs we are using
-	popq	%rdi
-	popq	%rax
+#---------------------AVG-----------------------------
+
+    # %r12 used for array[i-1] calculations
+    # %r13 used for array[i] calculations
+    # %r14 used for array[i+1] calculations
+    
+    rrmovq  %rax, %r12       # array[i - 1] into %rbx
+    rrmovq  %rax, %r13       # array[i] into %rcx
+    rrmovq	%rax, %r14       # array[i + 1] into %rdx
+    
+	subq	%r11, %r12
+	addq    %r11, %r14
+	
+	mulq	%rbp, %r12
+	mulq	%rbp, %r13
+	mulq	%rbp, %r14
+	
+	addq	%rdi, %r12
+	addq	%rdi, %r13
+	addq	%rdi, %r14
+	
+	mrmovq	0(%r12), %rbx
+	mrmovq	0(%r13), %rcx
+	mrmovq	0(%r14), %rdx
+	
+	#rrmovq  %rax, %r8       # array[i - 1] into %rbx
+	#subq	%r11, %r12
+	#mulq	%rbp, %r8
+	#addq	%rdi, %r8
+	#mrmovq	0(%r8), %rbx
+
+    # rrmovq  %rax, %r8       # array[i] into %rcx
+	#mulq	%rbp, %r8
+	#addq	%rdi, %r8
+	#mrmovq	0(%r8), %rcx
+
+	#rrmovq	%rax, %r8       # array[i + 1] into %rdx
+    #addq    %r11, %r8
+	#mulq	%rbp, %r8
+	#addq	%rdi, %r8
+	#mrmovq	0(%r8), %rdx
+
+# r8 not used by avg at this point
+        rrmovq  %rbx, %r8      # compute %rbx + 2 * %rcx + %rdx in %rax
+	irmovq	$2, %r9
+	mulq	%r9, %rcx
+	addq	%rcx, %r8
+	addq	%rdx, %r8
+
+	divq	%r10, %r8
+
+#----------------------------------------------------
 
 	rrmovq	%rax, %r9       # array[i] = avg(...)
 	mulq	%rbp, %r9
@@ -41,44 +88,13 @@ test:
         addq    %r11, %rax      # increment i
 	jmp	test
 done:
+    popq  %r14
+    popq %r13
+    popq %r12
+    popq %rbp
+    popq %rbx
 	ret
 
-
-avg:
-        pushq   %rbx            # save callee-saved regs we use
-
-        rrmovq  %rsi, %r8       # array[i - 1] into %rbx
-	# irmovq	$1, %r11
-	subq	%r11, %r8
-	mulq	%rbp, %r8
-	addq	%rdi, %r8
-	mrmovq	0(%r8), %rbx
-
-        rrmovq  %rsi, %r8       # array[i] into %rcx
-	# irmovq	$8, %r11
-	mulq	%rbp, %r8
-	addq	%rdi, %r8
-	mrmovq	0(%r8), %rcx
-
-	rrmovq	%rsi, %r8       # array[i + 1] into %rdx
-	# irmovq	$1, %r11
-        addq    %r11, %r8
-	# irmovq	$8, %r11
-	mulq	%rbp, %r8
-	addq	%rdi, %r8
-	mrmovq	0(%r8), %rdx
-
-        rrmovq  %rbx, %rax      # compute %rbx + 2 * %rcx + %rdx in %rax
-	irmovq	$2, %r9
-	mulq	%r9, %rcx
-	addq	%rcx, %rax
-	addq	%rdx, %rax
-
-    #    irmovq  $4, %r11        # divide by 4
-	divq	%r10, %rax
-
-        popq    %rbx            # restore callee-regs we use
-	ret
 
 # Array with 32 elements
 .pos	0x2000
