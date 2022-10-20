@@ -1,3 +1,5 @@
+#1186
+
 main:
 	irmovq	$size, %rsi
 	irmovq	$stack, %rsp
@@ -51,34 +53,37 @@ test:
     # %r13 used for array[i] calculations
     # %r14 used for array[i+1] calculations
     
-    rrmovq	%rax, %r14       # array[i + 1] into %rdx
+    
+    
+    rrmovq	%rax, %r14       # array[i + 1] into %r14
+    
+    irmovq	$2, %r9         # for A
 
-	addq    %r11, %r14
-
-	mulq	%rbp, %r14
-
-	addq	%rdi, %r14
+    
+    addq    %r11, %r14
+    
+    mulq	%r9, %rcx        #A
+    
+    
+    mulq	%rbp, %r14
+    
+    addq    %rbx, %rcx       #A
+    
+    addq	%rdi, %r14
+    
+    rrmovq	%rax, %r9       # array[i] = avg(...)#A'
+    
+    mrmovq	0(%r14), %r8
+    
+    mulq	%rbp, %r9        #A'
 	
-	irmovq	$2, %r9         # for A
-	mrmovq	0(%r14), %r8
-
+	addq    %r8, %rcx        #A
 	
-	#----A------
-	# stall
-	# compute %rbx + 2 * %rcx + %rdx in %rax # C
-	mulq	%r9, %rcx
 	
-	addq    %rbx, %rcx
-	addq    %r8, %rcx
+	addq	%rdi, %r9        #A'
 	
 	divq	%r10, %rcx      # C
-	
-	rrmovq	%rax, %r9       # array[i] = avg(...)
-	
-	mulq	%rbp, %r9
-	
-	addq	%rdi, %r9
-	
+
 	
 	#------
     rmmovq  %rcx, 0(%r9)
